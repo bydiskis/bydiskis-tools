@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zyklus-Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#17151a; --surface:#201d22; --surface-2:#2a262c;
+    --border:rgba(240,236,226,0.10); --border-strong:rgba(240,236,226,0.18);
+    --text:#f0ece2; --text-muted:#9c948a;
+    --gold:#d4a24e; --gold-dim:rgba(212,162,78,0.35); --terracotta:#c1653d;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;padding:32px 20px 60px;}
+  .app{max-width:640px;margin:0 auto;}
+  h1{font-family:'Fraunces',serif;font-weight:500;font-size:32px;margin:0 0 4px;}
+  .sub{color:var(--text-muted);font-size:13px;margin:0 0 28px;}
+  .tabs{display:flex;gap:6px;margin-bottom:24px;}
+  .tab{flex:1;padding:10px 0;text-align:center;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);cursor:pointer;}
+  .tab.active{color:var(--gold);border-color:var(--gold-dim);background:rgba(212,162,78,0.08);}
+  .period-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .period-nav button{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;width:34px;height:34px;font-family:'DM Mono',monospace;font-size:16px;cursor:pointer;}
+  .period-nav button:hover{border-color:var(--border-strong);}
+  .period-label{font-family:'Fraunces',serif;font-size:17px;}
+  .today-btn{font-size:11px;color:var(--gold);background:none;border:none;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;}
+  label{font-size:13px;color:var(--text-muted);}
+  select, input[type=date]{
+    width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:8px 10px;margin-top:6px;
+  }
+  .row{margin-bottom:14px;}
+  .row-head{display:flex;justify-content:space-between;margin-bottom:4px;}
+  .row-head .val{color:var(--gold);font-weight:500;font-size:13px;}
+  input[type=range]{width:100%;-webkit-appearance:none;height:4px;border-radius:2px;background:var(--border-strong);}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);cursor:pointer;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+  .chip{
+    font-size:12px;padding:6px 12px;border-radius:999px;border:1px solid var(--border);
+    background:var(--surface-2);color:var(--text-muted);cursor:pointer;user-select:none;
+  }
+  .chip.active{color:var(--terracotta);border-color:var(--terracotta);background:rgba(193,101,61,0.12);}
+  textarea{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:8px 10px;resize:vertical;min-height:50px;margin-top:6px;}
+  .metric-bar{margin-bottom:12px;}
+  .metric-bar .lbl{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;}
+  .metric-bar .track{height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;}
+  .metric-bar .fill{height:100%;background:var(--gold);}
+  .freq-item{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);}
+  .freq-item span:last-child{color:var(--text-muted);}
+  .comment-item{font-size:13px;padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;}
+  .comment-item .d{color:var(--text-muted);flex:0 0 70px;font-size:11px;padding-top:2px;}
+  .empty{color:var(--text-muted);font-size:13px;padding:20px 0;text-align:center;}
+  h2{font-family:'Fraunces',serif;font-weight:500;font-size:16px;margin:0 0 12px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Zyklus</h1>
+  <p class="sub">Hormone, Energie, Laune &mdash; lokal in diesem Browser gespeichert</p>
+
+  <div class="tabs">
+    <div class="tab active" data-mode="tag">Tag</div>
+    <div class="tab" data-mode="monat">Monat</div>
+    <div class="tab" data-mode="quartal">Quartal</div>
+    <div class="tab" data-mode="jahr">Jahr</div>
+  </div>
+
+  <div class="period-nav">
+    <button id="prevBtn">&#8592;</button>
+    <div><div class="period-label" id="periodLabel"></div><button class="today-btn" id="todayBtn">heute</button></div>
+    <button id="nextBtn">&#8594;</button>
+  </div>
+
+  <div id="editor"></div>
+</div>
+
+<script>
+const METRICS = ["Energielevel","Laune","Reizbarkeit","Schlafqualit\u00e4t","Fokus","Belastbarkeit Sport"];
+const PHASES = ["","Menstruation","Follikelphase","Eisprung","Lutealphase","PMS","Unklar"];
+const SYMPTOMS = [
+  "Hei\u00dfhunger S\u00fc\u00dfes","Hei\u00dfhunger Teig","Hei\u00dfhunger Salziges","Schmierblutungen","M\u00fcdigkeit",
+  "Bauchkr\u00e4mpfe","Brustspannen","R\u00fcckenschmerzen","Schmerzen Becken","Kopfschmerzen",
+  "Schwindel","Nackenschmerzen","Gliederschmerzen","Erh\u00f6hte Temperatur","Fieber",
+  "Krank/Infekt","Sch\u00fcttelfrost","Gereizt","\u00dcbelkeit","Bl\u00e4hungen",
+  "Hautunreinheiten","Verdauungsprobleme","Herzklopfen","Innere Unruhe","Weinerlichkeit",
+  "Ver\u00e4nderter Ausfluss","Wassereinlagerungen"
+];
+const STORAGE_KEY = "zyklus_v1";
+let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+let mode = "tag";
+let refDate = new Date();
+
+function pad(n){ return String(n).padStart(2,"0"); }
+function dateKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function getEntry(key){
+  if (data[key]){
+    const e = data[key];
+    while (e.metrics.length < METRICS.length) e.metrics.push(5);
+    return e;
+  }
+  return { phase:"", metrics: METRICS.map(()=>5), symptome: [], notiz: "" };
+}
+
+function getRange(){
+  const y = refDate.getFullYear(), m = refDate.getMonth();
+  if (mode === "monat") return [`${y}-${pad(m+1)}-01`, `${y}-${pad(m+1)}-31`];
+  if (mode === "quartal"){ const qm = Math.floor(m/3)*3; return [`${y}-${pad(qm+1)}-01`, `${y}-${pad(qm+3)}-31`]; }
+  if (mode === "jahr") return [`${y}-01-01`, `${y}-12-31`];
+  const k = dateKey(refDate); return [k,k];
+}
+
+function periodLabelText(){
+  if (mode === "tag") return refDate.toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+  if (mode === "monat") return refDate.toLocaleDateString("de-DE",{month:"long",year:"numeric"});
+  if (mode === "quartal") return `Q${Math.floor(refDate.getMonth()/3)+1} ${refDate.getFullYear()}`;
+  return `${refDate.getFullYear()}`;
+}
+
+function shiftPeriod(dir){
+  if (mode === "tag") refDate.setDate(refDate.getDate()+dir);
+  else if (mode === "monat") refDate.setMonth(refDate.getMonth()+dir);
+  else if (mode === "quartal") refDate.setMonth(refDate.getMonth()+dir*3);
+  else refDate.setFullYear(refDate.getFullYear()+dir);
+  render();
+}
+
+function renderTag(){
+  const key = dateKey(refDate);
+  const entry = getEntry(key);
+  const editor = document.getElementById("editor");
+
+  editor.innerHTML = `
+    <div class="card">
+      <label>Zyklusphase</label>
+      <select id="phaseSelect">
+        ${PHASES.map(p => `<option value="${p}" ${p===entry.phase?"selected":""}>${p||"\u2014 w\u00e4hlen \u2014"}</option>`).join("")}
+      </select>
+    </div>
+    <div class="card">
+      ${METRICS.map((m,i) => `
+        <div class="row">
+          <div class="row-head"><label>${m}</label><span class="val" id="mval-${i}">${entry.metrics[i]}</span></div>
+          <input type="range" min="1" max="10" step="1" value="${entry.metrics[i]}" data-idx="${i}" class="metricSlider">
+        </div>
+      `).join("")}
+    </div>
+    <div class="card">
+      <label>Symptome</label>
+      <div class="chips">
+        ${SYMPTOMS.map(s => `<div class="chip ${entry.symptome.includes(s)?"active":""}" data-s="${s}">${s}</div>`).join("")}
+      </div>
+    </div>
+    <div class="card">
+      <label>Notiz</label>
+      <textarea id="notizField" placeholder="Sonstiges, Beobachtungen...">${entry.notiz||""}</textarea>
+    </div>
+  `;
+
+  document.getElementById("phaseSelect").addEventListener("change", e => {
+    entry.phase = e.target.value; data[key]=entry; saveData();
+  });
+  editor.querySelectorAll(".metricSlider").forEach(el => {
+    el.addEventListener("input", () => {
+      const i = +el.dataset.idx;
+      entry.metrics[i] = +el.value;
+      document.getElementById("mval-"+i).textContent = el.value;
+      data[key]=entry; saveData();
+    });
+  });
+  editor.querySelectorAll(".chip").forEach(el => {
+    el.addEventListener("click", () => {
+      const s = el.dataset.s;
+      const idx = entry.symptome.indexOf(s);
+      if (idx > -1) entry.symptome.splice(idx,1); else entry.symptome.push(s);
+      el.classList.toggle("active");
+      data[key]=entry; saveData();
+    });
+  });
+  document.getElementById("notizField").addEventListener("input", e => {
+    entry.notiz = e.target.value; data[key]=entry; saveData();
+  });
+
+  data[key] = entry;
+  saveData();
+}
+
+function renderAggregate(){
+  const [start,end] = getRange();
+  const keys = Object.keys(data).filter(k => k >= start && k <= end);
+  const entries = keys.map(k => ({ date:k, ...data[k] }));
+  const editor = document.getElementById("editor");
+
+  if (!entries.length){
+    editor.innerHTML = `<p class="empty">Noch keine Eintr\u00e4ge in diesem Zeitraum.</p>`;
+    return;
+  }
+
+  const avg = METRICS.map((_,i) => entries.reduce((s,e)=>s+e.metrics[i],0)/entries.length);
+
+  const phaseCounts = {};
+  entries.forEach(e => { if (e.phase) phaseCounts[e.phase] = (phaseCounts[e.phase]||0)+1; });
+
+  const symptomCounts = {};
+  entries.forEach(e => e.symptome.forEach(s => { symptomCounts[s] = (symptomCounts[s]||0)+1; }));
+  const sortedSymptoms = Object.entries(symptomCounts).sort((a,b)=>b[1]-a[1]);
+
+  const notes = entries.filter(e => e.notiz && e.notiz.trim()).sort((a,b)=>b.date.localeCompare(a.date));
+
+  editor.innerHTML = `
+    <div class="card">
+      <h2>Durchschnitt</h2>
+      ${METRICS.map((m,i) => `
+        <div class="metric-bar">
+          <div class="lbl"><span>${m}</span><span>${Math.round(avg[i]*10)/10}</span></div>
+          <div class="track"><div class="fill" style="width:${avg[i]*10}%"></div></div>
+        </div>
+      `).join("")}
+    </div>
+    <div class="card">
+      <h2>Phasen-Verteilung</h2>
+      ${Object.keys(phaseCounts).length ? Object.entries(phaseCounts).map(([p,c]) => `
+        <div class="freq-item"><span>${p}</span><span>${c} Tage</span></div>
+      `).join("") : `<p class="empty">Keine Phasen erfasst.</p>`}
+    </div>
+    <div class="card">
+      <h2>H\u00e4ufigste Symptome</h2>
+      ${sortedSymptoms.length ? sortedSymptoms.map(([s,c]) => `
+        <div class="freq-item"><span>${s}</span><span>${c}x</span></div>
+      `).join("") : `<p class="empty">Keine Symptome erfasst.</p>`}
+    </div>
+    <div class="card">
+      <h2>Notizen</h2>
+      ${notes.length ? notes.map(n => `
+        <div class="comment-item"><span class="d">${n.date.slice(5)}</span><span>${n.notiz}</span></div>
+      `).join("") : `<p class="empty">Keine Notizen in diesem Zeitraum.</p>`}
+    </div>
+  `;
+}
+
+function render(){
+  document.getElementById("periodLabel").textContent = periodLabelText();
+  document.getElementById("todayBtn").style.display = mode === "tag" ? "inline" : "none";
+  if (mode === "tag") renderTag(); else renderAggregate();
+}
+
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    mode = tab.dataset.mode;
+    render();
+  });
+});
+document.getElementById("prevBtn").addEventListener("click", () => shiftPeriod(-1));
+document.getElementById("nextBtn").addEventListener("click", () => shiftPeriod(1));
+document.getElementById("todayBtn").addEventListener("click", () => { refDate = new Date(); render(); });
+
+render();
+</script>
+</body>
+</html>

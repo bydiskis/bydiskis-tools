@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lebensrad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #17151a;
+    --surface: #201d22;
+    --surface-2: #2a262c;
+    --border: rgba(240,236,226,0.10);
+    --border-strong: rgba(240,236,226,0.18);
+    --text: #f0ece2;
+    --text-muted: #9c948a;
+    --gold: #d4a24e;
+    --gold-dim: rgba(212,162,78,0.35);
+    --terracotta: #c1653d;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'DM Mono', monospace;
+    padding:32px 20px 60px;
+  }
+  .app{max-width:640px;margin:0 auto;}
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:32px;
+    margin:0 0 4px;
+    letter-spacing:0.01em;
+  }
+  .sub{color:var(--text-muted);font-size:13px;margin:0 0 28px;}
+
+  .tabs{display:flex;gap:6px;margin-bottom:24px;}
+  .tab{
+    flex:1;
+    padding:10px 0;
+    text-align:center;
+    font-size:12px;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text-muted);
+    cursor:pointer;
+    transition:all .15s;
+  }
+  .tab.active{
+    color:var(--gold);
+    border-color:var(--gold-dim);
+    background:rgba(212,162,78,0.08);
+  }
+
+  .period-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:20px;
+  }
+  .period-nav button{
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:6px;
+    width:34px;height:34px;
+    font-family:'DM Mono',monospace;
+    font-size:16px;
+    cursor:pointer;
+  }
+  .period-nav button:hover{border-color:var(--border-strong);}
+  .period-label{
+    font-family:'Fraunces', serif;
+    font-size:17px;
+  }
+  .today-btn{
+    font-size:11px;
+    color:var(--gold);
+    background:none;
+    border:none;
+    cursor:pointer;
+    text-decoration:underline;
+    text-underline-offset:3px;
+  }
+
+  .wheel-wrap{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:12px 12px 4px;
+    margin-bottom:24px;
+  }
+  svg text{font-family:'DM Mono', monospace;}
+
+  .rows{display:flex;flex-direction:column;gap:14px;}
+  .row{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px 16px;
+  }
+  .row-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:8px;
+  }
+  .row-head label{font-size:13px;}
+  .row-head .val{color:var(--gold);font-weight:500;font-size:13px;}
+  input[type=range]{
+    width:100%;
+    -webkit-appearance:none;
+    height:4px;
+    border-radius:2px;
+    background:var(--border-strong);
+    margin:4px 0 10px;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:16px;height:16px;
+    border-radius:50%;
+    background:var(--gold);
+    cursor:pointer;
+  }
+  textarea{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    font-family:'DM Mono', monospace;
+    font-size:12px;
+    padding:8px 10px;
+    resize:vertical;
+    min-height:36px;
+  }
+  textarea::placeholder{color:var(--text-muted);}
+  textarea:focus, input[type=range]:focus{outline:none;}
+
+  .comment-block{margin-top:24px;}
+  .comment-block h2{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:17px;
+    margin:0 0 12px;
+  }
+  .comment-cat{margin-bottom:16px;}
+  .comment-cat h3{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--terracotta);
+    margin:0 0 6px;
+  }
+  .comment-item{
+    font-size:13px;
+    padding:8px 0;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    gap:10px;
+  }
+  .comment-item .d{color:var(--text-muted);flex:0 0 70px;font-size:11px;padding-top:2px;}
+  .empty{color:var(--text-muted);font-size:13px;padding:20px 0;text-align:center;}
+  .note{color:var(--text-muted);font-size:11px;margin-top:32px;text-align:center;line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Lebensrad</h1>
+  <p class="sub">Tägliches Tracking &mdash; Werte werden lokal in diesem Browser gespeichert</p>
+
+  <div class="tabs">
+    <div class="tab active" data-mode="tag">Tag</div>
+    <div class="tab" data-mode="monat">Monat</div>
+    <div class="tab" data-mode="quartal">Quartal</div>
+    <div class="tab" data-mode="jahr">Jahr</div>
+  </div>
+
+  <div class="period-nav">
+    <button id="prevBtn">&#8592;</button>
+    <div>
+      <div class="period-label" id="periodLabel"></div>
+      <button class="today-btn" id="todayBtn">heute</button>
+    </div>
+    <button id="nextBtn">&#8594;</button>
+  </div>
+
+  <div class="wheel-wrap">
+    <svg id="wheel" viewBox="0 0 560 500" style="width:100%;display:block;"></svg>
+  </div>
+
+  <div id="editor"></div>
+</div>
+
+<script>
+const CATEGORIES = ["Beruf","Liebe/Beziehung","Soziales","Familie","Spa\u00df","Produktivit\u00e4t","Gesundheit"];
+const STORAGE_KEY = "lebensrad_v1";
+let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+let mode = "tag";
+let refDate = new Date();
+
+function pad(n){ return String(n).padStart(2,"0"); }
+function dateKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function getEntry(key){
+  if (data[key]) return data[key];
+  const prevKeys = Object.keys(data).filter(k => k < key).sort();
+  if (prevKeys.length){
+    const prev = data[prevKeys[prevKeys.length-1]];
+    return { values: prev.values.slice(), comments: CATEGORIES.map(()=>"") };
+  }
+  return { values: CATEGORIES.map(()=>5), comments: CATEGORIES.map(()=>"") };
+}
+
+function polar(cx,cy,angle,r){
+  const rad = angle * Math.PI/180;
+  return { x: cx + r*Math.sin(rad), y: cy - r*Math.cos(rad) };
+}
+
+function drawWheel(values){
+  const cx=280, cy=250, maxR=170, n=CATEGORIES.length, slice=360/n;
+  let svg = "";
+  for(let k=1;k<=5;k++){
+    svg += `<circle cx="${cx}" cy="${cy}" r="${maxR*k/5}" fill="none" stroke="rgba(240,236,226,0.08)" stroke-width="0.5"/>`;
+  }
+  for(let i=0;i<n;i++){
+    const p = polar(cx,cy,i*slice,maxR);
+    svg += `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="rgba(240,236,226,0.08)" stroke-width="0.5"/>`;
+  }
+  for(let i=0;i<n;i++){
+    const a0=i*slice, a1=(i+1)*slice, r=maxR*Math.max(values[i],0.3)/10;
+    const p1=polar(cx,cy,a0,r), p2=polar(cx,cy,a1,r);
+    svg += `<path d="M ${cx} ${cy} L ${p1.x} ${p1.y} A ${r} ${r} 0 0 1 ${p2.x} ${p2.y} Z" fill="#d4a24e" opacity="0.82" stroke="#c1653d" stroke-width="1"/>`;
+  }
+  for(let i=0;i<n;i++){
+    const mid=(i+0.5)*slice;
+    const lp=polar(cx,cy,mid,maxR+40);
+    const vp=polar(cx,cy,mid,maxR+22);
+    svg += `<text x="${lp.x}" y="${lp.y}" fill="#9c948a" font-size="11" text-anchor="middle" dominant-baseline="central">${CATEGORIES[i]}</text>`;
+    svg += `<text x="${vp.x}" y="${vp.y}" fill="#d4a24e" font-size="11" font-weight="500" text-anchor="middle" dominant-baseline="central">${Math.round(values[i]*10)/10}</text>`;
+  }
+  document.getElementById("wheel").innerHTML = svg;
+}
+
+function getRange(){
+  const y = refDate.getFullYear(), m = refDate.getMonth();
+  if (mode === "monat"){
+    const start = `${y}-${pad(m+1)}-01`;
+    const end = `${y}-${pad(m+1)}-31`;
+    return [start,end];
+  }
+  if (mode === "quartal"){
+    const qStartMonth = Math.floor(m/3)*3;
+    const start = `${y}-${pad(qStartMonth+1)}-01`;
+    const end = `${y}-${pad(qStartMonth+3)}-31`;
+    return [start,end];
+  }
+  if (mode === "jahr"){
+    return [`${y}-01-01`, `${y}-12-31`];
+  }
+  const k = dateKey(refDate);
+  return [k,k];
+}
+
+function periodLabelText(){
+  if (mode === "tag"){
+    return refDate.toLocaleDateString("de-DE", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+  }
+  if (mode === "monat"){
+    return refDate.toLocaleDateString("de-DE", { month:"long", year:"numeric" });
+  }
+  if (mode === "quartal"){
+    const q = Math.floor(refDate.getMonth()/3)+1;
+    return `Q${q} ${refDate.getFullYear()}`;
+  }
+  return `${refDate.getFullYear()}`;
+}
+
+function shiftPeriod(dir){
+  if (mode === "tag") refDate.setDate(refDate.getDate()+dir);
+  else if (mode === "monat") refDate.setMonth(refDate.getMonth()+dir);
+  else if (mode === "quartal") refDate.setMonth(refDate.getMonth()+dir*3);
+  else refDate.setFullYear(refDate.getFullYear()+dir);
+  render();
+}
+
+function renderTag(){
+  const key = dateKey(refDate);
+  const entry = getEntry(key);
+  drawWheel(entry.values);
+
+  const editor = document.getElementById("editor");
+  editor.innerHTML = `<div class="rows">${CATEGORIES.map((cat,i) => `
+    <div class="row">
+      <div class="row-head"><label>${cat}</label><span class="val" id="val-${i}">${entry.values[i]}</span></div>
+      <input type="range" min="1" max="10" step="1" value="${entry.values[i]}" data-idx="${i}" class="slider">
+      <textarea placeholder="Notiz zu ${cat} (optional)" data-idx="${i}" class="comment">${entry.comments[i] || ""}</textarea>
+    </div>
+  `).join("")}</div>`;
+
+  editor.querySelectorAll(".slider").forEach(el => {
+    el.addEventListener("input", () => {
+      const i = +el.dataset.idx;
+      entry.values[i] = +el.value;
+      document.getElementById("val-"+i).textContent = el.value;
+      drawWheel(entry.values);
+      data[key] = entry;
+      saveData();
+    });
+  });
+  editor.querySelectorAll(".comment").forEach(el => {
+    el.addEventListener("input", () => {
+      const i = +el.dataset.idx;
+      entry.comments[i] = el.value;
+      data[key] = entry;
+      saveData();
+    });
+  });
+
+  data[key] = entry;
+  saveData();
+}
+
+function renderAggregate(){
+  const [start,end] = getRange();
+  const entries = Object.keys(data)
+    .filter(k => k >= start && k <= end)
+    .map(k => ({ date:k, ...data[k] }));
+
+  const avg = CATEGORIES.map((_,i) => {
+    if (!entries.length) return 0;
+    return entries.reduce((s,e)=>s+e.values[i],0) / entries.length;
+  });
+  drawWheel(avg);
+
+  const editor = document.getElementById("editor");
+  if (!entries.length){
+    editor.innerHTML = `<p class="empty">Noch keine Einträge in diesem Zeitraum.</p>`;
+    return;
+  }
+
+  const comments = [];
+  entries.forEach(e => {
+    e.comments.forEach((text,i) => {
+      if (text && text.trim()) comments.push({ date:e.date, cat:CATEGORIES[i], text: text.trim() });
+    });
+  });
+
+  let html = `<div class="comment-block"><h2>Notizen im Zeitraum</h2>`;
+  if (!comments.length){
+    html += `<p class="empty">Keine Notizen in diesem Zeitraum.</p>`;
+  } else {
+    CATEGORIES.forEach(cat => {
+      const items = comments.filter(c => c.cat === cat).sort((a,b)=> b.date.localeCompare(a.date));
+      if (!items.length) return;
+      html += `<div class="comment-cat"><h3>${cat}</h3>${items.map(it => `
+        <div class="comment-item"><span class="d">${it.date.slice(5)}</span><span>${it.text}</span></div>
+      `).join("")}</div>`;
+    });
+  }
+  html += `</div>`;
+  editor.innerHTML = html;
+}
+
+function render(){
+  document.getElementById("periodLabel").textContent = periodLabelText();
+  document.getElementById("todayBtn").style.display = mode === "tag" ? "inline" : "none";
+  if (mode === "tag") renderTag();
+  else renderAggregate();
+}
+
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+    tab.classList.add("active");
+    mode = tab.dataset.mode;
+    render();
+  });
+});
+document.getElementById("prevBtn").addEventListener("click", () => shiftPeriod(-1));
+document.getElementById("nextBtn").addEventListener("click", () => shiftPeriod(1));
+document.getElementById("todayBtn").addEventListener("click", () => { refDate = new Date(); render(); });
+
+render();
+</script>
+</body>
+</html>
